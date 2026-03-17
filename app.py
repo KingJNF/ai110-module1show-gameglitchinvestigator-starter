@@ -116,6 +116,8 @@ if "show_new_game_message" not in st.session_state:
     st.session_state.show_new_game_message = False
 if "should_reset_game" not in st.session_state:
     st.session_state.should_reset_game = False
+if "show_balloons" not in st.session_state:
+    st.session_state.show_balloons = False
 
 # Handle game reset if flagged
 if st.session_state.should_reset_game:
@@ -137,6 +139,11 @@ st.subheader("Make a guess")
 if st.session_state.show_new_game_message:
     st.success("A new game has started.")
     st.session_state.show_new_game_message = False
+
+# Display balloons animation if win was triggered
+if st.session_state.show_balloons:
+    st.balloons()
+    st.session_state.show_balloons = False
 
 #FIX ME: It should show the correct amount of attempts for each difficulty, but it doesn't. The glitch is it shows 1 less the proper amount of attempts selected.
 #FIX ME: Have it show the correct range underneath the difficulty drop down menu and on the main page.
@@ -224,7 +231,7 @@ if submit:
         )
 
         if outcome == "Win":
-            st.balloons()
+            st.session_state.show_balloons = True
             st.session_state.status = "won"
             st.success(
                 f"You won! The secret was {st.session_state.secret}. "
