@@ -1,13 +1,14 @@
 import random
 import streamlit as st
 
+#FIXME:Should be fixed to be consistent with the difficulty settings, but the glitch is that it isn't.
 def get_range_for_difficulty(difficulty: str):
     if difficulty == "Easy":
         return 1, 20
     if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
         return 1, 50
+    if difficulty == "Hard":
+        return 1, 100
     return 1, 100
 
 
@@ -32,19 +33,22 @@ def parse_guess(raw: str):
 def check_guess(guess, secret):
     if guess == secret:
         return "Win", "🎉 Correct!"
-
+#FIX ME: The hints should be reversed. 
+# If the guess is higher than the secret, it should say 
+# "Too High" and if it's lower, it should say "Too Low". 
+# The glitch is that it's currently reversed.
     try:
         if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
+            return "Too High", "� Go LOWER!"
         else:
-            return "Too Low", "📉 Go LOWER!"
+            return "Too Low", "📈 Go HIGHER!"
     except TypeError:
         g = str(guess)
         if g == secret:
             return "Win", "🎉 Correct!"
         if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
+            return "Too High", "📉 Go LOWER!"
+        return "Too Low", "📈 Go HIGHER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -76,9 +80,10 @@ difficulty = st.sidebar.selectbox(
     ["Easy", "Normal", "Hard"],
     index=1,
 )
-
+#FIX ME: This is where it should show the correct amount of attempts for each difficulty, but it doesn't. The glitch is that it shows 1 less the proper amount of attempts selected.
+#FIX ME: Each difficulty should also have the proper amount of attempts linked to it.
 attempt_limit_map = {
-    "Easy": 6,
+    "Easy": 10,
     "Normal": 8,
     "Hard": 5,
 }
@@ -93,7 +98,7 @@ if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
 if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
+    st.session_state.attempts = 0
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -104,10 +109,39 @@ if "status" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "last_hint" not in st.session_state:
+    st.session_state.last_hint = None
+
+if "show_new_game_message" not in st.session_state:
+    st.session_state.show_new_game_message = False
+if "should_reset_game" not in st.session_state:
+    st.session_state.should_reset_game = False
+
+# Handle game reset if flagged
+if st.session_state.should_reset_game:
+    st.session_state.attempts = 0
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.history = []
+    st.session_state.last_hint = None
+    st.session_state.status = "playing"
+    st.session_state.show_new_game_message = True
+    st.session_state.should_reset_game = False
+    
+    # Clear the text input field by setting it to empty string
+    st.session_state[f"guess_input_{difficulty}"] = ""
+    
+    st.rerun()
 st.subheader("Make a guess")
 
+# Display new game message if it was triggered
+if st.session_state.show_new_game_message:
+    st.success("A new game has started.")
+    st.session_state.show_new_game_message = False
+
+#FIX ME: It should show the correct amount of attempts for each difficulty, but it doesn't. The glitch is it shows 1 less the proper amount of attempts selected.
+#FIX ME: Have it show the correct range underneath the difficulty drop down menu and on the main page.
 st.info(
-    f"Guess a number between 1 and 100. "
+    f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -118,23 +152,41 @@ with st.expander("Developer Debug Info"):
     st.write("Difficulty:", difficulty)
     st.write("History:", st.session_state.history)
 
-raw_guess = st.text_input(
-    "Enter your guess:",
-    key=f"guess_input_{difficulty}"
-)
+#FIX ME: I have to press the submit button twice to register the guess. 
+#  Fixed it so you only have to press it once to register your guess.
+
+with st.form("guess_form"):
+    raw_guess = st.text_input(
+        "Enter your guess:",
+        value=st.session_state.get(f"guess_input_{difficulty}", ""),
+        key=f"guess_input_{difficulty}"
+    )
+    submit = st.form_submit_button("Submit Guess 🚀")
+
+# Display any hint message from the previous submission
+if st.session_state.last_hint:
+    st.warning(st.session_state.last_hint)
+    st.session_state.last_hint = None
 
 col1, col2, col3 = st.columns(3)
+#FIX ME: The new game button should reset the game immediately, 
+# but it doesn't. The glitch is it only resets the amount of attempts
+# but doesnt clear the history, the hint prompt or the last submitted 
+# guess. I want it so it clears the text field, 
+# resets the amount of attempts, 
+# clears the history, the hint prompt if already on 
+# screen and shows a new secret number. 
+# Also show a new game started prompt.
 with col1:
-    submit = st.button("Submit Guess 🚀")
-with col2:
     new_game = st.button("New Game 🔁")
+with col2:
+    st.empty()
 with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
+# Check if new game button was clicked
 if new_game:
-    st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
-    st.success("New game started.")
+    st.session_state.should_reset_game = True
     st.rerun()
 
 if st.session_state.status != "playing":
@@ -163,7 +215,7 @@ if submit:
         outcome, message = check_guess(guess_int, secret)
 
         if show_hint:
-            st.warning(message)
+            st.session_state.last_hint = message
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -186,6 +238,9 @@ if submit:
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+    
+    st.rerun()
+
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
