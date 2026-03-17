@@ -31,7 +31,10 @@ It wrote the code, ran away, and now the game is unplayable.
 
 ## 📸 Demo
 
-- [ ] [Insert a screenshot of your fixed, winning game here]
+- [X] [Insert a screenshot of your fixed, winning game here]
+
+<img width="2405" height="1728" alt="Game Glitches Fixed Screenshot" src="https://github.com/user-attachments/assets/afe25b7c-5b89-4b8c-b0f2-058b581c6a16" />
+
 
 ## 🚀 Stretch Features
 
